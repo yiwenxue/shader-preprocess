@@ -1,7 +1,4 @@
-const fs = require('fs');
-const { grammarFromScriptElement } = require('ohm-js');
 const ohm = require('ohm-js');
-const toAST = require('ohm-js/extras').toAST;
 
 const grammarSource = String.raw`
 Pattern {
@@ -83,140 +80,118 @@ const semantics = grammar.createSemantics();
 semantics.addOperation(
     'pattern',
     {
-    _terminal() {
-        return this.sourceString;
-    },
-    Exp(header, e, comment) {
-        return {
-            type: "Pattern",
-            name: "Root",
-            value: e.pattern(),
-        };
-    },
-    Pattern_Define(def, op, exp) {
-        return {
-            type: "define",
-            name: def.pattern(),
-            value: exp.pattern(),
-        };
-    },
-    Pattern_Declare(dec, op, exp) {
-        return {
-            type: "declare",
-            name: dec.pattern(),
-            value: exp.pattern(),
-        };
-    },
-    Expression_AND(left, op, right) {
-        return {
-            type: 'AND',
-            name: left.pattern(),
-            value: right.pattern()
-        };
-    },
-    Expression_OR(left, op, right) {
-        return {
-            type: 'OR',
-            name: left.pattern(),
-            value: right.pattern()
-        };
-    },
-    Expression_NOT(_, expression) {
-        return {
-            type: 'NOT',
-            name: null,
-            value: expression.pattern()
-        };
-    },
-    PirExp_Paren(_1, expression, _2) {
-        return expression.pattern();
-    },
-    DefineExp_Define(key, _, option) {
-        return {
-            type: 'define_exp',
-            name: key.pattern(),
-            value: option.pattern()
-        };
-    },
-    DefineExp_DefineArray(key, _, optionArray) {
-        return {
-            type: 'define_exp_array',
-            name: key.pattern(),
-            value: optionArray.children.map(option => option.pattern())
-        };
-    },
-    DeclareExp(key) {
-        return {
-            type: 'declare_exp',
-            name: key.pattern(),
-            value: 'any',
-        };
-    },
-    OptionArray_empty(_1, _2) {
-        return {
-            type: "Option_array",
-            name: null,
-            value: null,
-        };
-    },
-    OptionArray_nonempty(_1, options, _2) {
-        return {
-            type: 'Option_array',
-            name: null,
-            value: options.pattern(),
-        };
-    },
-    Options(option, _, options) {
-        return {
-            type : "Options", 
-            name : null,
-            value : [option.pattern(), ...options.children.map(option => option.pattern())],
-        };
-    },
-    Option(e) {
-        return e.pattern();
-    },
-    Key(e) {
-        return e.sourceString;
-    },
-    StringOption (_1, option, _2) {
-        return option.sourceString;
-    },
-    NumberOption(e) {
-        return parseInt(e.sourceString);
-    }
-});
+        _terminal() {
+            return this.sourceString;
+        },
+        Exp(header, e, comment) {
+            return {
+                type: "Pattern",
+                name: "Root",
+                value: e.pattern(),
+            };
+        },
+        Pattern_Define(def, op, exp) {
+            return {
+                type: "define",
+                name: def.pattern(),
+                value: exp.pattern(),
+            };
+        },
+        Pattern_Declare(dec, op, exp) {
+            return {
+                type: "declare",
+                name: dec.pattern(),
+                value: exp.pattern(),
+            };
+        },
+        Expression_AND(left, op, right) {
+            return {
+                type: 'AND',
+                name: left.pattern(),
+                value: right.pattern()
+            };
+        },
+        Expression_OR(left, op, right) {
+            return {
+                type: 'OR',
+                name: left.pattern(),
+                value: right.pattern()
+            };
+        },
+        Expression_NOT(_, expression) {
+            return {
+                type: 'NOT',
+                name: null,
+                value: expression.pattern()
+            };
+        },
+        PirExp_Paren(_1, expression, _2) {
+            return expression.pattern();
+        },
+        DefineExp_Define(key, _, option) {
+            return {
+                type: 'define_exp',
+                name: key.pattern(),
+                value: option.pattern()
+            };
+        },
+        DefineExp_DefineArray(key, _, optionArray) {
+            return {
+                type: 'define_exp_array',
+                name: key.pattern(),
+                value: optionArray.children.map(option => option.pattern())
+            };
+        },
+        DeclareExp(key) {
+            return {
+                type: 'declare_exp',
+                name: key.pattern(),
+                value: 'any',
+            };
+        },
+        OptionArray_empty(_1, _2) {
+            return {
+                type: "Option_array",
+                name: null,
+                value: null,
+            };
+        },
+        OptionArray_nonempty(_1, options, _2) {
+            return {
+                type: 'Option_array',
+                name: null,
+                value: options.pattern(),
+            };
+        },
+        Options(option, _, options) {
+            return {
+                type: "Options",
+                name: null,
+                value: [option.pattern(), ...options.children.map(option => option.pattern())],
+            };
+        },
+        Option(e) {
+            return e.pattern();
+        },
+        Key(e) {
+            return e.sourceString;
+        },
+        StringOption(_1, option, _2) {
+            return option.sourceString;
+        },
+        NumberOption(e) {
+            return parseInt(e.sourceString);
+        }
+    });
 
-// const match2 = grammar.match('#pragma define-pattern CC_FOG_TYPE requires CC_USE_FOG : ON');
-
-// const match3 = grammar.match('#pragma define-pattern CC_SNOW_METHOD : \'PHYSICAL\' requires NOT (CC_USE_FOG : ON AND NOT CC_FOG_TYPE : 1)');
-
-// const match4 = grammar.match('#pragma define-pattern CC_MODERN_EFFECT requires CC_USE_INSTANCE_SKINNING');
-
-// const match5 = grammar.match('#pragma define-pattern _ requires (CC_USE_FOG : ON AND NOT CC_FOG_TYPE : 1 OR CC_USE_INSTANCING : ON)');
-
-// const match6 = grammar.match('#pragma define-pattern CC_FOG_TYPE : 2 requires CC_USE_INSTANCING : ON');
-
-// const match7 = grammar.match('#pragma define-pattern CC_MODERN_FOG requires CC_FOG_TYPE');
-
-const match8 = grammar.match('#pragma define-pattern CC_FOG_TYPE : [1, 3] requires CC_USE_INSTANCING : [ON]');
-
-// const ast = toAST(match8, mapping);
-// console.log(match8.succeeded());
-// console.log(match8.result);
-// console.log(ast);
-// console.log(ast.Pattern.name.name[2]);
-
-const res = semantics(match8).pattern();
-
-function printer (key, level) {
+function printer(key, level) {
     if (!key.type) {
         if (key.name) {
             console.log(key.name);
         } else {
             console.log(key);
         }
-        return ;
+        return;
     }
     const align = '+ ';
     switch (key.type) {
@@ -245,19 +220,19 @@ function printer (key, level) {
     }
 };
 
-function satisfy (key, require) {
+function satisfy(key, require) {
     if (require === 'any') {
         return true;
     }
     return require === key;
 }
 
-function satisfyArray (key, require) {
+function satisfyArray(key, require) {
     const options = require.value.value;
     return options.some(v => v === key);
 }
 
-function matching (keySet, pattern) {
+function matching(keySet, pattern) {
     switch (pattern.type) {
         case 'define_exp':
             return satisfy(keySet.find(e => e.name === pattern.name).value, pattern.value);
@@ -270,15 +245,15 @@ function matching (keySet, pattern) {
             return false;
 
         case 'define':
-            return matching(keySet, pattern.name) ? 
-                matching(keySet, pattern.value) : 
+            return matching(keySet, pattern.name) ?
+                matching(keySet, pattern.value) :
                 true;
 
         case 'declare':
-            if (pattern.name.name === `_`) 
+            if (pattern.name.name === `_`)
                 return matching(keySet, pattern.value);
             else break;
-    
+
         case 'NOT':
             return !matching(keySet, pattern.value);
 
@@ -292,10 +267,6 @@ function matching (keySet, pattern) {
             return false;
     }
 }
-
-// console.log(res.value.name.value[0].value);
-// console.log(res.value.value.value[0]);
-// printer(res, 0);
 
 module.exports = {
     grammar,

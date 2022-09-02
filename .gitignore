@@ -1,0 +1,8 @@
+*.log
+build/
+node_modules/
+.vscode/
+temp/
+
+package-lock.json
+package.json

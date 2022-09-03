@@ -220,6 +220,10 @@ function printer(key, level) {
     }
 };
 
+const MATCHING_TRUE = 1;
+const MATCHING_FALSE = 0;
+const MATCHING_UNKNOWN = -1;
+
 function satisfy(key, require) {
     if (require === 'any') {
         return true;
@@ -232,7 +236,7 @@ function satisfyArray(key, require) {
     return options.some(v => v === key);
 }
 
-function matching(keySet, pattern) {
+function matching2(keySet, pattern) {
     switch (pattern.type) {
         case 'define_exp':
             return satisfy(keySet.find(e => e.name === pattern.name).value, pattern.value);
@@ -245,26 +249,87 @@ function matching(keySet, pattern) {
             return false;
 
         case 'define':
-            return matching(keySet, pattern.name) ?
-                matching(keySet, pattern.value) :
+            return matching2(keySet, pattern.name) ?
+                matching2(keySet, pattern.value) :
                 true;
 
         case 'declare':
             if (pattern.name.name === `_`)
-                return matching(keySet, pattern.value);
+                return matching2(keySet, pattern.value);
             else break;
 
         case 'NOT':
-            return !matching(keySet, pattern.value);
+            return !matching2(keySet, pattern.value);
 
         case 'AND':
-            return matching(keySet, pattern.name) && matching(keySet, pattern.value);
+            return matching2(keySet, pattern.name) && matching2(keySet, pattern.value);
 
         case 'OR':
-            return matching(keySet, pattern.name) || matching(keySet, pattern.value);
+            return matching2(keySet, pattern.name) || matching2(keySet, pattern.value);
 
         default:
             return false;
+    }
+}
+
+function matching(keySet, pattern) {
+    let key, res, res1, res2;
+    switch (pattern.type) {
+        case 'define_exp':
+            key = keySet.find(e => e.name === pattern.name);
+            return key ? (satisfy(key.value, pattern.value) ? MATCHING_TRUE : MATCHING_FALSE) : MATCHING_UNKNOWN;
+
+        case 'define_exp_array':
+            key = keySet.find(e => e.name === pattern.name);
+            return key ? (satisfyArray(key.value, pattern.value[0]) ? MATCHING_TRUE : MATCHING_FALSE) : MATCHING_UNKNOWN;
+
+        case 'declare_exp':
+            console.error('declare exp should be trimmed out before matching');
+            return MATCHING_FALSE;
+
+        case 'define':
+            res = matching(keySet, pattern.name);
+            if (res === MATCHING_UNKNOWN)
+                return MATCHING_UNKNOWN;
+            else if (res === MATCHING_TRUE) {
+                return matching(keySet, pattern.value);
+            }
+            return MATCHING_TRUE;
+
+        case 'declare':
+            if (pattern.name.name === `_`)
+                return matching(keySet, pattern.value);
+            else
+                return MATCHING_UNKNOWN;
+
+        case 'NOT':
+            res = matching(keySet, pattern.value);
+            return res === MATCHING_UNKNOWN ? MATCHING_UNKNOWN : (res === MATCHING_TRUE ? MATCHING_FALSE : MATCHING_TRUE);
+
+        case 'AND':
+            res1 = matching(keySet, pattern.name);
+            res2 = matching(keySet, pattern.value);
+            if (res1 === MATCHING_FALSE || res2 === MATCHING_FALSE)
+                return MATCHING_FALSE;
+            if (res1 === MATCHING_TRUE && res2 === MATCHING_TRUE)
+                return MATCHING_TRUE;
+            if (res1 === MATCHING_UNKNOWN && res2 === MATCHING_UNKNOWN)
+                return MATCHING_UNKNOWN;
+
+
+        case 'OR':
+            res1 = matching(keySet, pattern.name);
+            res2 = matching(keySet, pattern.value);
+            if (res1 === MATCHING_TRUE || res2 === MATCHING_TRUE)
+                return MATCHING_TRUE;
+            if (res1 === MATCHING_FALSE && res2 === MATCHING_FALSE)
+                return MATCHING_FALSE;
+            if (res1 === MATCHING_UNKNOWN || res2 === MATCHING_UNKNOWN)
+                return MATCHING_UNKNOWN;
+
+
+        default:
+            return MATCHING_FALSE;
     }
 }
 
@@ -273,4 +338,8 @@ module.exports = {
     semantics,
     printer,
     matching,
+    matching2,
+    MATCHING_FALSE,
+    MATCHING_TRUE,
+    MATCHING_UNKNOWN,
 };
